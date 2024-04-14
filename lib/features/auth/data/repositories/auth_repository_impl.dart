@@ -1,6 +1,7 @@
 import 'package:fpdart/fpdart.dart';
-import 'package:my_blog/features/auth/domain/entities/user.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 
+import '../../../../core/entities/user.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/error/failures.dart';
 import '../../domain/repositories/auth_repository.dart';
@@ -16,27 +17,45 @@ class AuthRepositoryImpl implements AuthRepository {
     required String email,
     required String password,
   }) async {
+    return _getUser(
+        () async => await authRemoteDataSource.signInWithEmailAndPassword(
+              email: email,
+              password: password,
+            ));
+  }
+
+  @override
+  Future<Either<Failure, User>> signUpWithEmailAndPassword({
+    required String name,
+    required String email,
+    required String password,
+  }) async {
+    return _getUser(
+        () async => await authRemoteDataSource.signUpWithEmailAndPassword(
+              name: name,
+              email: email,
+              password: password,
+            ));
+  }
+
+  Future<Either<Failure, User>> _getUser(Future<User> Function() fn) async {
     try {
-      final user = await authRemoteDataSource.signInWithEmailAndPassword(
-          email: email, password: password);
+      final user = await fn();
       return right(user);
+    } on sb.AuthException catch (e) {
+      return left(Failure(e.message));
     } on ServerExceptions catch (e) {
       return left(Failure(e.message));
     }
   }
 
   @override
-  Future<Either<Failure, User>> signUpWithEmailAndPassword(
-      {required String name,
-      required String email,
-      required String password}) async {
+  Future<Either<Failure, User>> currentUser() async {
     try {
-      final user = await authRemoteDataSource.signUpWithEmailAndPassword(
-        name: name,
-        email: email,
-        password: password,
-      );
-
+      final user = await authRemoteDataSource.getCurrentUserData();
+      if (user == null) {
+        return left(Failure('User is null'));
+      }
       return right(user);
     } on ServerExceptions catch (e) {
       return left(Failure(e.message));

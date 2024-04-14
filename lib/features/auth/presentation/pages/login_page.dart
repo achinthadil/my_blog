@@ -42,6 +42,7 @@ class _LoginPageState extends State<LoginPage> {
             }
           },
           builder: (context, state) {
+            debugPrint("😂 state :: $state");
             if (state is AuthLoading) {
               return const Loader();
             }
